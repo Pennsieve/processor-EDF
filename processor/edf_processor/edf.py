@@ -1,4 +1,3 @@
-import sys
 import struct
 import re
 import numpy as np
@@ -9,7 +8,7 @@ SECOND_TO_USECOND = 1000000
 def twos_comp(val, bits):
     """Compute the 2's complement of int value val."""
     if (val & (1 << (bits - 1))) != 0:  # If sign bit is set, e.g., 8bit: 128-255
-        val = val - (1 << bits)         # Compute negative value
+        val -= (1 << bits)              # Compute negative value
     return val                          # Return positive value as is
 
 def transform_value(val, phys_min, phys_max, dig_min, dig_max, bits):
@@ -98,16 +97,10 @@ class EdfReader:
         return self.phy_dim[i]
 
     def get_start_datetime(self):
-        split_start_date = self.start_date.split(".")
-        split_start_time = self.start_time.split(".")
-        year = int(split_start_date[2]) + 1900
-        if (year < 1985):
-            year = year + 100
-        month = int(split_start_date[1])
-        day = int(split_start_date[0])
-        hour = int(split_start_time[0])
-        minute = int(split_start_time[1])
-        second = int(split_start_time[2])
+        day, month, year = map(int, self.start_date.split("."))
+        hour, minute, second = map(int, self.start_time.split("."))
+        year = year + 1900 if year < 85 else year + 2000
+
         return datetime(year, month, day, hour, minute, second)
 
     def get_timestamps(self, index, signal_number, start_time) :
@@ -117,7 +110,7 @@ class EdfReader:
         return np.linspace(start_time_record, end_time_record, num=self.get_nr_samples(signal_number), endpoint=False) 
   
     def is_discontiguous(self):
-        return (self.reserved == "EDF+D")
+        return self.reserved == "EDF+D"
 
     def get_duration(self):
         return self.duration
