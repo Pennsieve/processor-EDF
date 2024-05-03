@@ -99,8 +99,7 @@ class EdfReader:
     def get_start_datetime(self):
         day, month, year = map(int, self.start_date.split("."))
         hour, minute, second = map(int, self.start_time.split("."))
-        year = year + 1900 if year < 85 else year + 2000
-
+        year = year + 2000 if year < 85 else year + 1900
         return datetime(year, month, day, hour, minute, second)
 
     def get_timestamps(self, index, signal_number, start_time) :
