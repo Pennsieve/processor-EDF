@@ -9,7 +9,7 @@ params_global = [
         name      = 'test',
         nchannels = 11,
         nsamples  = 120000,
-        result    = 'pass', 
+        result    = 'pass',
         rate      = 200,
         inputs    = {
             'file': '/data/input/test.edf'
@@ -19,7 +19,7 @@ params_global = [
         name      = 'test2',
         nchannels = 43,
         nsamples  = 497400,
-        result    = 'pass', 
+        result    = 'pass',
         rate      = 200,
         inputs    = {
             'file': '/data/input/103-002_EEG_01_17_2019.edf'
@@ -29,7 +29,7 @@ params_global = [
         template  = True,
         nchannels = 2,
         nsamples  = 12000,
-        result    = 'pass', 
+        result    = 'pass',
         rate      = 800,
         inputs    = {
             'file': '/data/input/sin_wave.edf'
