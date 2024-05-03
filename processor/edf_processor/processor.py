@@ -32,23 +32,30 @@ class EdfProcessor(BaseTimeSeriesProcessor):
 
                     timestamps = []
                     values = []
-                    for index in range(edf_file.get_number_of_data_records()):
+
+                    # if the EDF file is_discontiguous then it includes timestamp per values for each signal/record
+                    if edf_file.is_discontiguous():
+                        for index in range(edf_file.get_number_of_data_records()):
                             vals = edf_file.read_signal(signal_number, index * nb_samples_per_record, (index + 1) * nb_samples_per_record)
-                            # if the EDF file is_discontiguous then it includes timestamp per values for each signal/record
-                            if edf_file.is_discontiguous():
-                                ts = edf_file.get_timestamps(index, signal_number, start_time)
-                            # otherwise the data is contiguous and we need to create a set of corresponding timestamps
-                            # per value using the sampling rate and start / end times
-                            else:
-                                nsamples = n_samples[signal_number]
-                                length = (n_samples[signal_number] - 1) / sample_rate
-                                end_time = int(start_time + length * 1e6)
-                                # setting the chunk_size = nsamples should yield exactly one chunk
-                                chunk = next(chunks(start_time, end_time, nsamples, nsamples))
-                                ts = chunk.timestamps
+                            ts = edf_file.get_timestamps(index, signal_number, start_time)
 
                             timestamps.append(ts[:len(vals)])
                             values.append(vals)
+
+                    # otherwise the data is contiguous and we need to create a
+                    # set of corresponding timestamps per value using the
+                    # sampling rate and start / end times
+                    else:
+                        nsamples = n_samples[signal_number]
+                        length = (n_samples[signal_number] - 1) / sample_rate
+                        end_time = int(start_time + length * 1e6)
+
+                        # setting the chunk_size = nsamples should yield exactly one chunk
+                        chunk = next(chunks(start_time, end_time, nsamples, nsamples))
+                        vals = edf_file.read_signal(signal_number, chunk.start_index, chunk.end_index)
+
+                        timestamps.append(chunk.timestamps[:len(vals)])
+                        values.append(vals)
 
                     self.write_channel_data(
                         channel=channel,
