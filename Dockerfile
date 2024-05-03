@@ -1,4 +1,4 @@
-FROM python:3.9.12
+FROM python:3.10.13
 
 WORKDIR /processor
 
@@ -10,4 +10,4 @@ RUN pip install -r /processor/requirements.txt
 
 COPY processor/ /processor
 
-CMD ["python3.9", "/processor/main.py" ]
+CMD ["python3.10", "/processor/main.py" ]

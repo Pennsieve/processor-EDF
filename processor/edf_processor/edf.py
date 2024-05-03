@@ -39,7 +39,7 @@ class EdfReader:
             self.start_date = f.read(8).strip().decode('utf-8', 'ignore')
             self.start_time = f.read(8).strip().decode('utf-8', 'ignore')
             self.nb_bytes = int(f.read(8))
-            self.reserved = f.read(44).strip()
+            self.reserved = f.read(44).strip().strip().decode('utf-8', 'ignore')
             self.nb_data_rec = int(f.read(8))
             self.duration = float(f.read(8))
             self.nb_signal = int(f.read(4))
