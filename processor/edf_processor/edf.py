@@ -74,16 +74,16 @@ class EdfReader:
                         self.data_signal[x] = np.append(self.data_signal[x], [
                             transform_value(struct.unpack('<H', z)[0], self.phy_min[x], self.phy_max[x], self.dig_min[x],
                                             self.dig_max[x], 16) for z in segment])
-    
+
     def get_n_samples(self):
         return [x * self.nb_data_rec for x in self.nr_samples] 
 
     def get_signal_labels(self):
         return self.labels
-   
+
     def get_record_start_time(self, i):
         return self.rec_start_time[i]
-    
+
     def get_number_of_data_records(self):
         return self.nb_data_rec
 

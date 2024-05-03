@@ -256,13 +256,20 @@ class BaseTimeSeriesProcessor(BaseProcessor):
 
     def write_channel_data(self, channel, timestamps, values):
         """
-        Write channel data. Updates start/end times of channel object as necessary.
+        Write channel data to binary file.
+
+        Updates channel contiguous_chunks metadata.
+
+        Updates start/end times of channel object as necessary.
 
         NOTE: timestamps and values are assumed to be in chronological order!
         """
         # append serialized sample data to file
         with open(channel.data_file,'ab') as f:
             f.write(values.tobytes())
+
+        for chunk in discontinuous_chunks(timestamps, channel.rate):
+            channel.add_nonoverlapping_contiguous_chunk(chunk)
 
         # update start/end times
         start_time = int(utils.infer_epoch(timestamps[0]))
