@@ -304,7 +304,7 @@ class TimeSeriesContiguousChunk:
         return {
             'index': int(self.index),
             'start': self.start,
-            'end':   self.end,
+            # 'end':   self.end, # end index not required for channel metadata output
         }
 
     @classmethod
@@ -313,13 +313,13 @@ class TimeSeriesContiguousChunk:
 
 def discontinuous_chunks(timestamps, sampling_rate):
     '''
-    Returns the index ranges for contiguous segments in data.
+    Returns contiguous segments (chunks) in data.
     Boundaries are identified as follows:
 
         (timestamp difference) > 2 * (sampling period)
 
     '''
-    gap_threshold = (1.0/sampling_rate)*1e6 * 2
+    gap_threshold = utils.secs_to_usecs(1.0/sampling_rate) * 2
 
     boundaries = np.concatenate(
         ([0], np.where( np.diff(timestamps) > gap_threshold)[0] + 1, [len(timestamps)]))

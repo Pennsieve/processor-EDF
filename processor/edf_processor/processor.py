@@ -48,7 +48,7 @@ class EdfProcessor(BaseTimeSeriesProcessor):
                     else:
                         nsamples = n_samples[signal_number]
                         length = (n_samples[signal_number] - 1) / sample_rate
-                        end_time = int(start_time + length * 1e6)
+                        end_time = int(start_time + utils.secs_to_usecs(length))
 
                         # setting the chunk_size = nsamples should yield exactly one chunk
                         chunk = next(chunks(start_time, end_time, nsamples, nsamples))
