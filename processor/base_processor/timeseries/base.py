@@ -324,15 +324,8 @@ def discontinuous_chunks(timestamps, sampling_rate):
     boundaries = np.concatenate(
         ([0], np.where( np.diff(timestamps) > gap_threshold)[0] + 1, [len(timestamps)]))
 
-    if (len(boundaries) > 2):
-        print(len(boundaries))
-        print(np.diff(timestamps))
-        print(gap_threshold)
-
     for i in np.arange(len(boundaries)-1):
         start_index = boundaries[i]
-        # print(type(start_index))
-        # print(start_index)
         end_index = boundaries[i + 1] - 1
 
         start_time = timestamps[start_index]

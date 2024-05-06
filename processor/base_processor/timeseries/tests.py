@@ -4,11 +4,6 @@ import pytest
 import math
 import numpy as np
 
-CONTINUOUS_TYPE = np.dtype([
-    ('timestamp',  np.float64),
-    ('value',      np.float64),
-])
-
 # ------------------- test models -------------------
 
 class ChannelTest(object):
@@ -72,7 +67,6 @@ class TimeSeriesTest(object):
 
 def inferred_rate_test(channel):
     if channel.type == 'CONTINUOUS':
-        data = np.fromfile(channel.data_file, dtype=np.float64)
         inferred_rate = float(channel.num_values)/((channel.end-channel.start)/1e6)
 
         assert channel.rate == pytest.approx(inferred_rate, 0.01)
