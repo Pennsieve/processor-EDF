@@ -4,11 +4,6 @@ import pytest
 import math
 import numpy as np
 
-CONTINUOUS_TYPE = np.dtype([
-    ('timestamp',  np.float64),
-    ('value',      np.float64),
-])
-
 # ------------------- test models -------------------
 
 class ChannelTest(object):
@@ -70,15 +65,11 @@ class TimeSeriesTest(object):
 
 # ------------------- helper methods -------------------
 
-def inferred_rate_test(rate, fname, ftype='CONTINUOUS'):
-    if ftype == 'CONTINUOUS':
-        data = np.fromfile(fname, dtype=CONTINUOUS_TYPE, count=22)
-        filesize = min(len(data['timestamp']),22)
-        #We infer the rate from two non consecutive timestamps to account for rounding errors
-        d1 = data['timestamp'][1].astype(np.int64)
-        d2 = data['timestamp'][filesize-1].astype(np.int64)
-        inferred_rate = 1e6/((d2-d1)/float(filesize-2))
-        assert rate == pytest.approx(inferred_rate, 0.01)
+def inferred_rate_test(channel):
+    if channel.type == 'CONTINUOUS':
+        inferred_rate = float(channel.num_values)/((channel.end-channel.start)/1e6)
+
+        assert channel.rate == pytest.approx(inferred_rate, 0.01)
 
 def sin_wav(t,amp,frequency):
     return amp * math.sin( 2 * math.pi * frequency * t)
@@ -104,8 +95,7 @@ def number_samples_test(task, expected):
     if not expected.spikes:
         for channel in task.channels:
             num_bytes = os.stat(channel.data_file).st_size
-            # interleaved values/timestamps at 8 bytes each
-            nsamples  = num_bytes / 16
+            nsamples  = num_bytes / 8
             try:
                 # channel-specific sample size
                 exp_chan = expected.channels[str(channel.name)]
@@ -119,7 +109,7 @@ def number_samples_test(task, expected):
 
 def bin_test(task, result_files):
     for channel in task.channels:
-        inferred_rate_test(channel.rate, channel.data_file, ftype=channel.type)
+        inferred_rate_test(channel)
 
 # ------------------- methods for global tests -------------------
 
@@ -156,8 +146,7 @@ def sin_wave_test(task, expected):
     # one channel is "Sin 10Hz" and the other is "Sin 20Hz"
     # because of the transformation and encoding of the different file format, we allow for a 1% difference in value
     for channel in task.channels:
-        data = np.fromfile(channel.data_file, dtype=CONTINUOUS_TYPE)
-        file_values = data['value'].astype(np.float64)
+        file_values = np.fromfile(channel.data_file, dtype=np.float64)
         template_values = []
         try:
             rate = expected.channels[str(channel.name)].rate

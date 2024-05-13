@@ -1,3 +1,4 @@
+import bisect
 import os
 import datetime
 import numpy as np
@@ -20,6 +21,9 @@ class TimeSeriesChannel(object):
         self.group    = group
         self.last_annot = 0
         self.properties = []
+
+        # stores starting timestamp/index markers for contiguous data within the channel
+        self.contiguous_chunks = []
 
         # metadata
         self.index      = index
@@ -45,6 +49,7 @@ class TimeSeriesChannel(object):
             'type':  self.type,
             'group': self.group,
             'lastAnnotation': self.last_annot,
+            'contiguousChunks': [c.as_dict() for c in self.contiguous_chunks],
             'properties': self.properties
         }
         if self.id is not None:
@@ -66,9 +71,20 @@ class TimeSeriesChannel(object):
         ch.start      = d['start']
         ch.end        = d['end']
         ch.last_annot = d['lastAnnotation']
+        ch.contiguous_chunks = TimeSeriesContiguousChunk.from_dict(d['contiguousChunks'])
         ch.properties = d['properties']
 
         return ch
+
+    def add_nonoverlapping_contiguous_chunk(self, chunk):
+        # find the leftmost insertion point into the ordered list of contiguous_chunks
+        i = bisect.bisect_left(self.contiguous_chunks, chunk.start, key=lambda c: c.start)
+
+        # ensure the new chunk doesn't overlap with another chunk
+        assert i == 0 or chunk.start > self.contiguous_chunks[i - 1].end
+        assert i == len(self.contiguous_chunks) or chunk.end < self.contiguous_chunks[i].start
+
+        self.contiguous_chunks.insert(i, chunk)
 
 
 class TimeSeriesSpike(object):
@@ -240,18 +256,20 @@ class BaseTimeSeriesProcessor(BaseProcessor):
 
     def write_channel_data(self, channel, timestamps, values):
         """
-        Write channel data. Updates start/end times of channel object as necessary.
+        Write channel data to binary file.
 
-        NOTE: timestamps/values are assumed to be in chronological order!
+        Updates channel contiguous_chunks metadata.
+
+        Updates start/end times of channel object as necessary.
+
+        NOTE: timestamps and values are assumed to be in chronological order!
         """
-        # save as ts/value pairs: [ts1, val1, ts2, val2, ...]
-        interleaved = np.empty((timestamps.size + values.size), dtype=np.float64)
-        interleaved[0::2] = timestamps
-        interleaved[1::2] = values
-
-        # append serialized interleaved data to file
+        # append serialized sample data to file
         with open(channel.data_file,'ab') as f:
-            f.write(interleaved.tobytes())
+            f.write(values.tobytes())
+
+        for chunk in discontinuous_chunks(timestamps, channel.rate):
+            channel.add_nonoverlapping_contiguous_chunk(chunk)
 
         # update start/end times
         start_time = int(utils.infer_epoch(timestamps[0]))
@@ -266,6 +284,55 @@ class BaseTimeSeriesProcessor(BaseProcessor):
 
         # replace with updated
         self.channels[channel.index] = channel
+
+
+class TimeSeriesContiguousChunk:
+    '''
+    Attributes:
+        index: index at which the contiguous chunk starts
+        start: starting timestamp for the contiguous chunk
+        end: ending timestamp for the contiguous chunk
+    '''
+    def __init__(self, index, start, end):
+        assert end >= start, "contiguous chunk should not have an ending timestamp less than its starting timestamp"
+
+        self.index = index
+        self.start = utils.infer_epoch(start)
+        self.end = utils.infer_epoch(end)
+
+    def as_dict(self):
+        return {
+            'index': int(self.index),
+            'start': self.start,
+            # 'end':   self.end, # end index not required for channel metadata output
+        }
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls(index = d['index'], start = d['start'], end = d['end'])
+
+def discontinuous_chunks(timestamps, sampling_rate):
+    '''
+    Returns contiguous segments (chunks) in data.
+    Boundaries are identified as follows:
+
+        (timestamp difference) > 2 * (sampling period)
+
+    '''
+    gap_threshold = utils.secs_to_usecs(1.0/sampling_rate) * 2
+
+    boundaries = np.concatenate(
+        ([0], np.where( np.diff(timestamps) > gap_threshold)[0] + 1, [len(timestamps)]))
+
+    for i in np.arange(len(boundaries)-1):
+        start_index = boundaries[i]
+        end_index = boundaries[i + 1] - 1
+
+        start_time = timestamps[start_index]
+        end_time = timestamps[end_index]
+
+        yield TimeSeriesContiguousChunk(index = int(start_index), start = start_time, end = end_time)
+
 
 class TimeSeriesChunk:
     '''
