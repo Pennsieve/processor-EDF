@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "http://pennsieve.io/schemas/timeseries-channel.schema.json",
+  "title": "Time Series Channel Metadata",
+  "description": "Metadata describing time series sample data recorded on a single channel",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Pennsieve platform identifier for the time series channel"
+    },
+    "name": {
+      "type": "string"
+    },
+    "start": {
+      "type": "integer",
+      "description": "epoch-based timestamp in microseconds when the channel recording began"
+    },
+    "end": {
+      "type": "integer",
+      "description": "epoch-based timestamp in microseconds when the channel recording ended"
+    },
+    "unit": {
+      "type": "string",
+      "description": "unit the sample data is captured in e.g. uV"
+    },
+    "rate": {
+      "type": "number",
+      "description": "rate (in hertz) at which sampling occurs e.g. 200 Hz"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["CONTINUOUS", "UNIT"]
+    },
+    "group": {
+      "type": "string",
+      "default": "default"
+    },
+    "lastAnnotation": {
+      "type": ["integer"],
+      "default": 0
+    },
+    "contiguousChunks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "description": "index of the start of the contiguous chunk of sample data"
+          },
+          "start": {
+            "type": "integer",
+            "description": "index-aligned epoch-based timestamp in microseconds when the contiguous chunk begins"
+          }
+        },
+        "required": ["index", "start"]
+      }
+    },
+    "properties": {
+      "type": "array",
+      "items": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "any additional properties associated with the time series channel"
+      }
+    }
+  },
+  "required": ["name", "start", "end", "unit", "rate", "type"]
+}
