@@ -1,12 +1,18 @@
 import bisect
 import os
 import datetime
+import json
+import jsonschema
 import numpy as np
+import importlib.resources as pkg_resources
 
 # internal
 from base_processor import BaseProcessor
 from base_processor.timeseries import utils
 from math import ceil
+
+with pkg_resources.open_text('base_processor.timeseries.resources', 'timeseries-channel.schema.json') as file:
+    TIMESERIES_CHANNEL_SCHEMA = json.load(file)
 
 class TimeSeriesChannel(object):
     def __init__(self, name, rate, index, unit, type, group='default', output_dir = '.'):
@@ -54,6 +60,8 @@ class TimeSeriesChannel(object):
         }
         if self.id is not None:
             resp['id'] = self.id
+
+        jsonschema.validate(instance = resp, schema = TIMESERIES_CHANNEL_SCHEMA)
         return resp
 
     @classmethod
